@@ -1,0 +1,39 @@
+overflow: False
+binning:
+    - ["binvar0", "np.array([200,210,220,230,240,260,280,300,340,380,420,480,560,660,780,920])"]
+    - ["binvar1", "np.array([-0.6,-0.55,-0.5,-0.45,-0.4,-0.35,-0.3,-0.25,-0.2,-0.15,-0.1,-0.05,0,0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6])"]
+data:
+    preproc:
+        - "df: df.reset_index()"
+        - "df: df.loc[df.eval(\"(varname0=='ZCand_pt') & (varname1=='METnoX_ptPerpZCandNorm')\")]"
+    channel_processes:
+        - name: ["DoubleMuon", "data_obs", 0]
+          eval: "df: df.loc[df.eval(\"(selection=='DoubleMuon') & (parent=='MET')\")]"
+        - name: ["DoubleElectron", "data_obs", 0]
+          eval: "df: df.loc[df.eval(\"(selection=='DoubleElectron') & (parent=='SingleElectron')\")]"
+mc:
+    preproc:
+        - "df: df.reset_index()"
+        - "df: df.loc[df.eval(\"(varname0=='ZCand_pt') & (varname1=='METnoX_ptPerpZCandNorm')\")]"
+        - "df: change_parent(df, 'DYJets', (df.parent=='DYJetsToLL'))"
+        - "df: change_parent(df, 'DYJets', (df.parent!='DYJetsToLL'))"
+        - "df: df.groupby(['varname0', 'varname1', 'selection', 'parent', 'binvar0', 'binvar1']).sum().reset_index()"
+    channel_processes:
+        - name: ["DoubleMuon", "DYJets", 1]
+          eval: "df: df.loc[df.eval(\"selection=='DoubleMuon'\")]"
+        - name: ["DoubleElectron", "DYJets", 1]
+          eval: "df: df.loc[df.eval(\"selection=='DoubleElectron'\")]"
+    systs: [
+        "d1kqcd", "d2kqcd", "d3kqcd", "d1kew", "d2keww", "d2kewz", "d3keww", "d3kewz", "dkmix",
+        "eleIdIsoTight", "eleIdIsoVeto", "eleReco", "eleTrig",
+        "muonIdLoose", "muonIdTight", "muonIsoLoose", "muonIsoTight", "muonTrig",
+        "photonIdLoose", "photonPixelSeedVeto",
+        "tauIdTight",
+        "btagSF",
+        "metTrigStat",
+        "pileup", "prefiring",
+        "pdfscale", "alphas", "qcdF", "qcdR", "qcdFqcdR",
+        "jesTotal", "jerSF", "unclust",
+        "eleEnergyScale", "muonPtScale", "photonEnergyScale",
+    ]
+params: []
