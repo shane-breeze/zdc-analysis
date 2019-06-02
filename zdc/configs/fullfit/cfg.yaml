@@ -1,0 +1,154 @@
+overflow: True
+binning:
+    - ["binvar0", "np.array([200,220,250,280,310,340,370,400,430,470,510,550,590,640,690,740,790,840,900,960,1020,1100])"]
+data:
+    preproc:
+        - "df: df.reset_index()"
+    channel_processes:
+        - name: ["Monojet", "data_obs", 0]
+          eval: "df: df.loc[df.eval(\"(selection=='Monojet') & (parent=='MET')\")]"
+        - name: ["MonojetQCD", "data_obs", 0]
+          eval: "df: df.loc[df.eval(\"(selection=='MonojetQCD') & (parent=='MET')\")]"
+        - name: ["SingleMuon", "data_obs", 0]
+          eval: "df: df.loc[df.eval(\"(selection=='SingleMuon') & (parent=='MET')\")]"
+        - name: ["SingleMuonQCD", "data_obs", 0]
+          eval: "df: df.loc[df.eval(\"(selection=='SingleMuonQCD') & (parent=='MET')\")]"
+        - name: ["DoubleMuon", "data_obs", 0]
+          eval: "df: df.loc[df.eval(\"(selection=='DoubleMuon') & (parent=='MET')\")]"
+        - name: ["SingleElectron", "data_obs", 0]
+          eval: "df: df.loc[df.eval(\"(selection=='SingleElectron') & (parent=='SingleElectron')\")]"
+        - name: ["SingleElectronQCD", "data_obs", 0]
+          eval: "df: df.loc[df.eval(\"(selection=='SingleElectronQCD') & (parent=='SingleElectron')\")]"
+        - name: ["DoubleElectron", "data_obs", 0]
+          eval: "df: df.loc[df.eval(\"(selection=='DoubleElectron') & (parent=='SingleElectron')\")]"
+        - name: ["SingleTau", "data_obs", 0]
+          eval: "df: df.loc[df.eval(\"(selection=='SingleTau') & (parent=='MET')\")]"
+mc:
+    preproc:
+        - "df: df.reset_index()"
+        - "df: df.groupby(['varname0', 'selection', 'parent', 'binvar0']).sum().reset_index()"
+    channel_processes:
+        - name: ["Monojet", "ZJetsToNuNu", 0]
+          eval: "df: df.loc[(df.selection=='Monojet') & (df.parent=='ZJetsToNuNu')]"
+        - name: ["Monojet", "WJetsToLNu", 7]
+          eval: "df: df.loc[(df.selection=='Monojet') & (df.parent.isin(['WJetsToENu', 'WJetsToMuNu', 'WJetsToTauNu']))]"
+        - name: ["Monojet", "QCD", 8]
+          eval: "df: df.loc[(df.selection=='Monojet') & (df.parent=='QCD')]"
+        - name: ["Monojet", "Background", 9]
+          eval: "df: df.loc[(df.selection=='Monojet') & (df.parent.isin(['TTJets', 'Diboson', 'EWKV2Jets', 'SingleTop', 'G1Jet', 'VGamma', 'DYJetsToTauHTauH', 'DYJetsToTauHTauL', 'DYJetsToTauLTauL']))]"
+        - name: ["MonojetQCD", "ZJetsToNuNu", 0]
+          eval: "df: df.loc[(df.selection=='MonojetQCD') & (df.parent=='ZJetsToNuNu')]"
+        - name: ["MonojetQCD", "WJetsToLNu", 7]
+          eval: "df: df.loc[(df.selection=='MonojetQCD') & (df.parent.isin(['WJetsToENu', 'WJetsToMuNu', 'WJetsToTauNu']))]"
+        - name: ["MonojetQCD", "QCD", 8]
+          eval: "df: df.loc[(df.selection=='MonojetQCD') & (df.parent=='QCD')]"
+        - name: ["MonojetQCD", "Background", 9]
+          eval: "df: df.loc[(df.selection=='MonojetQCD') & (df.parent.isin(['TTJets', 'Diboson', 'EWKV2Jets', 'SingleTop', 'G1Jet', 'VGamma', 'DYJetsToTauHTauH', 'DYJetsToTauHTauL', 'DYJetsToTauLTauL']))]"
+        - name: ["SingleMuon", "WJetsToLNu", 7]
+          eval: "df: df.loc[(df.selection=='SingleMuon') & (df.parent.isin(['WJetsToENu', 'WJetsToMuNu', 'WJetsToTauNu']))]"
+        - name: ["SingleMuon", "QCD", 8]
+          eval: "df: df.loc[(df.selection=='SingleMuon') & (df.parent=='QCD')]"
+        - name: ["SingleMuon", "Background", 9]
+          eval: "df: df.loc[(df.selection=='SingleMuon') & (df.parent.isin(['TTJets', 'Diboson', 'EWKV2Jets', 'SingleTop', 'G1Jet', 'VGamma', 'DYJetsToTauHTauH', 'DYJetsToTauHTauL', 'DYJetsToTauLTauL']))]"
+        - name: ["SingleMuonQCD", "WJetsToLNu", 7]
+          eval: "df: df.loc[(df.selection=='SingleMuonQCD') & (df.parent.isin(['WJetsToENu', 'WJetsToMuNu', 'WJetsToTauHNu', 'WJetsToTauLNu']))]"
+        - name: ["SingleMuonQCD", "QCD", 8]
+          eval: "df: df.loc[(df.selection=='SingleMuonQCD') & (df.parent=='QCD')]"
+        - name: ["SingleMuonQCD", "Background", 9]
+          eval: "df: df.loc[(df.selection=='SingleMuonQCD') & (df.parent.isin(['TTJets', 'Diboson', 'EWKV2Jets', 'SingleTop', 'G1Jet', 'VGamma', 'DYJetsToTauHTauH', 'DYJetsToTauHTauL', 'DYJetsToTauLTauL']))]"
+        - name: ["DoubleMuon", "DYJetsToMuMu", 1]
+          eval: "df: df.loc[(df.selection=='DoubleMuon') & (df.parent=='DYJetsToMuMu')]"
+        - name: ["DoubleMuon", "ZJetsToMuMu", 2]
+          eval: "df: df.loc[(df.selection=='DoubleMuon') & (df.parent=='DYJetsToMuMu')]"
+        - name: ["DoubleMuon", "GStarToMuMu", 3]
+          eval: "df: df.loc[(df.selection=='DoubleMuon') & (df.parent=='DYJetsToMuMu')]"
+        - name: ["DoubleMuon", "Background", 9]
+          eval: "df: df.loc[(df.selection=='DoubleMuon') & (df.parent.isin(['TTJets', 'Diboson', 'EWKV2Jets', 'SingleTop', 'G1Jet', 'VGamma', 'DYJetsToTauHTauH', 'DYJetsToTauHTauL', 'DYJetsToTauLTauL']))]"
+        - name: ["SingleElectron", "WJetsToLNu", 7]
+          eval: "df: df.loc[(df.selection=='SingleElectron') & (df.parent.isin(['WJetsToENu', 'WJetsToMuNu', 'WJetsToTauHNu', 'WJetsToTauLNu']))]"
+        - name: ["SingleElectron", "QCD", 8]
+          eval: "df: df.loc[(df.selection=='SingleElectron') & (df.parent=='QCD')]"
+        - name: ["SingleElectron", "Background", 9]
+          eval: "df: df.loc[(df.selection=='SingleElectron') & (df.parent.isin(['TTJets', 'Diboson', 'EWKV2Jets', 'SingleTop', 'G1Jet', 'VGamma', 'DYJetsToTauHTauH', 'DYJetsToTauHTauL', 'DYJetsToTauLTauL']))]"
+        - name: ["SingleElectronQCD", "WJetsToLNu", 7]
+          eval: "df: df.loc[(df.selection=='SingleElectronQCD') & (df.parent.isin(['WJetsToENu', 'WJetsToMuNu', 'WJetsToTauHNu', 'WJetsToTauLNu']))]"
+        - name: ["SingleElectronQCD", "QCD", 8]
+          eval: "df: df.loc[(df.selection=='SingleElectronQCD') & (df.parent=='QCD')]"
+        - name: ["SingleElectronQCD", "Background", 9]
+          eval: "df: df.loc[(df.selection=='SingleElectronQCD') & (df.parent.isin(['TTJets', 'Diboson', 'EWKV2Jets', 'SingleTop', 'G1Jet', 'VGamma', 'DYJetsToTauHTauH', 'DYJetsToTauHTauL', 'DYJetsToTauLTauL']))]"
+        - name: ["DoubleElectron", "DYJetsToEE", 4]
+          eval: "df: df.loc[(df.selection=='DoubleElectron') & (df.parent=='DYJetsToEE')]"
+        - name: ["DoubleElectron", "ZJetsToEE", 5]
+          eval: "df: df.loc[(df.selection=='DoubleElectron') & (df.parent=='DYJetsToEE')]"
+        - name: ["DoubleElectron", "GStarToEE", 6]
+          eval: "df: df.loc[(df.selection=='DoubleElectron') & (df.parent=='DYJetsToEE')]"
+        - name: ["DoubleElectron", "Background", 9]
+          eval: "df: df.loc[(df.selection=='DoubleElectron') & (df.parent.isin(['TTJets', 'Diboson', 'EWKV2Jets', 'SingleTop', 'G1Jet', 'VGamma', 'DYJetsToTauHTauH', 'DYJetsToTauHTauL', 'DYJetsToTauLTauL']))]"
+        - name: ["SingleTau", "WJetsToLNu", 7]
+          eval: "df: df.loc[(df.selection=='SingleTau') & (df.parent.isin(['WJetsToENu', 'WJetsToMuNu', 'WJetsToTauNu']))]"
+        - name: ["SingleTau", "QCD", 8]
+          eval: "df: df.loc[(df.selection=='SingleTau') & (df.parent=='QCD')]"
+        - name: ["SingleTau", "Background", 9]
+          eval: "df: df.loc[(df.selection=='SingleTau') & (df.parent.isin(['TTJets', 'Diboson', 'EWKV2Jets', 'SingleTop', 'G1Jet', 'VGamma', 'DYJetsToTauHTauH', 'DYJetsToTauHTauL', 'DYJetsToTauLTauL']))]"
+    systs: [
+        "d1kqcd", "d2kqcd", "d3kqcd", "d1kew", "d2keww", "d2kewz", "d3keww", "d3kewz", "dkmix",
+        "eleIdIsoTight", "eleIdIsoVeto", "eleReco", "eleTrig",
+        "muonIdLoose", "muonIdTight", "muonIsoLoose", "muonIsoTight", "muonTrig",
+        "photonIdLoose", "photonPixelSeedVeto",
+        "tauIdTight",
+        "btagSF",
+        "metTrigStat",
+        "pileup", "prefiring",
+        "pdfscale", "alphas", "qcdF", "qcdR", "qcdFqcdR",
+        "jesTotal", "jerSF", "unclust",
+        #"eleEnergyScale", "muonPtScale", "photonEnergyScale",
+        "qcd_syst", "qcd_syst_bin0", "qcd_syst_bin1", "qcd_syst_bin2",
+        "qcd_syst_bin3", "qcd_syst_bin4", "qcd_syst_bin5", "qcd_syst_bin6",
+        "qcd_syst_bin7", "qcd_syst_bin8",
+    ]
+    add_syst:
+        qcd_syst: [0.3459314797807649, 0.18247746062507564, 0.0674477245958569, 0.025202003986923682, -0.01704371662200954, -0.02695158807264375, -0.03685945952327796, 0.03662982899851691, 0.11011911752031178, 0.06260730802510017, 0.015095498529888562, -0.11193814191914231, -0.23897178236817318, -0.16972292978172704, -0.10047407719528093, -0.031225224608834812, -0.031225224608834812, -0.031225224608834812, -0.031225224608834812, -0.031225224608834812, -0.031225224608834812, -0.031225224608834812]
+        qcd_syst_bin0: [0.04239974727431075, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        qcd_syst_bin1: [0.0, 0.03572300789982814, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        qcd_syst_bin2: [0.0, 0.0, 0.035911203848490975, 0.035911203848490975, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        qcd_syst_bin3: [0.0, 0.0, 0.0, 0.0, 0.04032185491642686, 0.04032185491642686, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        qcd_syst_bin4: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05420534667815495, 0.05420534667815495, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        qcd_syst_bin5: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.08084427541121715, 0.08084427541121715, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        qcd_syst_bin6: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.12782763261602437, 0.12782763261602437, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        qcd_syst_bin7: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.18506633810815035, 0.18506633810815035, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        qcd_syst_bin8: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.44212649939281146, 0.44212649939281146, 0.44212649939281146, 0.44212649939281146, 0.44212649939281146, 0.44212649939281146, 0.44212649939281146, 0.44212649939281146]
+params:
+    - ["#kZJets_pdfscale", "lnN", "0.994523439/1.025340129"]
+    - ["#kZJets_qcdscale", "lnN", "0.999235287/1.001696478"]
+    - ["#kZJets_mcstat",   "lnN", "1.000816493"]
+    - ["#kGStar_pdfscale", "lnN", "0.994444821/1.009749389"]
+    - ["#kGStar_qcdscale", "lnN", "1.001456315/0.998238766"]
+    - ["#kGStar_mcstat",   "lnN", "1.001486825"]
+    - ["rWJets",       "rateParam", "(Monojet|SingleMuon|SingleElectron|SingleTau)", "WJetsToLNu",  "1",                        "[0.1,2.0]"]
+    - ["rWJetsQCD",    "rateParam", "(MonojetQCD|SingleMuonQCD|SingleElectronQCD)",  "WJetsToLNu",  "1",                        "[0.1,2.0]"]
+    - ["rQCD",         "rateParam", "*",                                             "QCD",         "1",                        "[0.1,2.0]"]
+    - ["rZJets",       "rateParam", "*",                                             "ZJetsToNuNu", "1",                        "[0.1,2.0]"]
+    - ["rDYJets",      "rateParam", "*",                                             "DYJets*",     "sqrt(@0)",                 "rZJets"]
+    - ["rZJetsToMuMu", "rateParam", "*",                                             "ZJetsToMuMu", "1.0164589*(@0-sqrt(@0))",  "rZJets"]
+    - ["rZJetsToEE",   "rateParam", "*",                                             "ZJetsToEE",   "1.0164589*(@0-sqrt(@0))",  "rZJets"]
+    - ["rGStarToMuMu", "rateParam", "*",                                             "GStar*",      "0.015040019*(1-sqrt(@0))", "rZJets"]
+    - ["*", "autoMCStats", "10", "1"]
+    - ["#nuisance", "edit", "rename", "ZJetsToNuNu", "*",                 "dk_mix",   "dk_mix_ZJets"]
+    - ["#nuisance", "edit", "rename", "ZJetsToEE",   "*",                 "dk_mix",   "dk_mix_DYJets"]
+    - ["#nuisance", "edit", "rename", "ZJetsToMuMu", "*",                 "dk_mix",   "dk_mix_DYJets"]
+    - ["#nuisance", "edit", "rename", "GStar",       "*",                 "dk_mix",   "dk_mix_DYJets"]
+    - ["#nuisance", "edit", "rename", "DYJets",      "*",                 "dk_mix",   "dk_mix_DYJets"]
+    - ["#nuisance", "edit", "rename", "WJetsToLNu",  "*",                 "dk_mix",   "dk_mix_WJets"]
+    - ["#nuisance", "edit", "rename", "ZJets",       "*",                 "pdfscale", "pdfscale_ZJets"]
+    - ["#nuisance", "edit", "rename", "DYJets",      "*",                 "pdfscale", "pdfscale_ZJets"]
+    - ["#nuisance", "edit", "rename", "GStar",       "*",                 "pdfscale", "pdfscale_ZJets"]
+    - ["#nuisance", "edit", "rename", "WJetsToLNu",  "*",                 "pdfscale", "pdfscale_WJets"]
+    - ["#nuisance", "edit", "rename", "Background",  "Monojet",           "pdfscale", "pdfscale_Background_Monojet"]
+    - ["#nuisance", "edit", "rename", "Background",  "MonojetQCD",        "pdfscale", "pdfscale_Background_MonojetQCD"]
+    - ["#nuisance", "edit", "rename", "Background",  "SingleMuon",        "pdfscale", "pdfscale_Background_SingleMuon"]
+    - ["#nuisance", "edit", "rename", "Background",  "SingleMuonQCD",     "pdfscale", "pdfscale_Background_SingleMuonQCD"]
+    - ["#nuisance", "edit", "rename", "Background",  "SingleElectron",    "pdfscale", "pdfscale_Background_SingleElectron"]
+    - ["#nuisance", "edit", "rename", "Background",  "SingleElectronQCD", "pdfscale", "pdfscale_Background_SingleElectronQCD"]
+    - ["#nuisance", "edit", "rename", "Background",  "DoubleMuon",        "pdfscale", "pdfscale_Background_DoubleMuon"]
+    - ["#nuisance", "edit", "rename", "Background",  "DoubleElectron",    "pdfscale", "pdfscale_Background_DoubleElectron"]
+    - ["#nuisance", "edit", "rename", "Background",  "SingleTau",         "pdfscale", "pdfscale_Background_SingleTau"]
