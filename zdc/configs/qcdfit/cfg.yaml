@@ -1,0 +1,56 @@
+overflow: True
+binning:
+    - ["binvar0", "np.array([200,220,250,310,370,430,510,590,740,np.inf])"]
+    - ["binvar1", "np.array([40,60,80,100,150,200,250,300,400,500,750,1000])"]
+data:
+    preproc:
+        - "df: df.reset_index()"
+        - "df: df.loc[df.eval(\"(varname0=='METnoX_pt') & (varname1=='NearestJetSelectionMET_pt')\")]"
+    channel_processes:
+        - name: ["MonojetQCD", "data_obs", 0]
+          eval: "df: df.loc[(df.selection=='MonojetQCD') & (df.parent=='MET')]"
+        - name: ["SingleMuonQCD", "data_obs", 0]
+          eval: "df: df.loc[(df.selection=='SingleMuonQCD') & (df.parent=='MET')]"
+        - name: ["SingleElectronQCD", "data_obs", 0]
+          eval: "df: df.loc[(df.selection=='SingleElectronQCD') & (df.parent=='SingleElectron')]"
+mc:
+    preproc:
+        - "df: df.reset_index()"
+        - "df: df.loc[df.eval(\"(varname0=='METnoX_pt') & (varname1=='NearestJetSelectionMET_pt')\")]"
+    channel_processes:
+        - name: ["MonojetQCD", "ZJetsToNuNu", -1]
+          eval: "df: df.loc[(df.selection=='MonojetQCD') & (df.parent=='ZJetsToNuNu')]"
+        - name: ["MonojetQCD", "QCD", 0]
+          eval: "df: df.loc[(df.selection=='MonojetQCD') & (df.parent=='QCD')]"
+        - name: ["MonojetQCD", "WJetsToLNu", 1]
+          eval: "df: df.loc[(df.selection=='MonojetQCD') & (df.parent.isin(['WJetsToENu', 'WJetsToMuNu', 'WJetsToTauHNu', 'WJetsToTauLNu']))]"
+        - name: ["MonojetQCD", "Background", 2]
+          eval: "df: df.loc[(df.selection=='MonojetQCD') & (df.parent.isin(['DYJetsToEE', 'DYJetsToMuMu', 'DYJetsToTauHTauH', 'DYJetsToTauHTauL', 'DYJetsToTauLTauL', 'Diboson', 'EWKV2Jets', 'G1Jet', 'SingleTop', 'TTJets', 'VGamma']))]"
+        - name: ["SingleMuonQCD", "QCD", 0]
+          eval: "df: df.loc[(df.selection=='SingleMuonQCD') & (df.parent=='QCD')]"
+        - name: ["SingleMuonQCD", "WJetsToLNu", 1]
+          eval: "df: df.loc[(df.selection=='SingleMuonQCD') & (df.parent.isin(['WJetsToENu', 'WJetsToMuNu', 'WJetsToTauHNu', 'WJetsToTauLNu']))]"
+        - name: ["SingleMuonQCD", "Background", 2]
+          eval: "df: df.loc[(df.selection=='SingleMuonQCD') & (df.parent.isin(['DYJetsToEE', 'DYJetsToMuMu', 'DYJetsToTauHTauH', 'DYJetsToTauHTauL', 'DYJetsToTauLTauL', 'Diboson', 'EWKV2Jets', 'G1Jet', 'SingleTop', 'TTJets', 'VGamma']))]"
+        - name: ["SingleElectronQCD", "QCD", 0]
+          eval: "df: df.loc[(df.selection=='SingleElectronQCD') & (df.parent=='QCD')]"
+        - name: ["SingleElectronQCD", "WJetsToLNu", 1]
+          eval: "df: df.loc[(df.selection=='SingleElectronQCD') & (df.parent.isin(['WJetsToENu', 'WJetsToMuNu', 'WJetsToTauHNu', 'WJetsToTauLNu']))]"
+        - name: ["SingleElectronQCD", "Background", 2]
+          eval: "df: df.loc[(df.selection=='SingleElectronQCD') & (df.parent.isin(['DYJetsToEE', 'DYJetsToMuMu', 'DYJetsToTauHTauH', 'DYJetsToTauHTauL', 'DYJetsToTauLTauL', 'Diboson', 'EWKV2Jets', 'G1Jet', 'SingleTop', 'TTJets', 'VGamma']))]"
+    systs: [
+        "d1kqcd", "d2kqcd", "d3kqcd", "d1kew", "d2keww", "d2kewz", "d3keww", "d3kewz", "dkmix",
+        "eleIdIsoTight", "eleIdIsoVeto", "eleReco", "eleTrig",
+        "muonIdLoose", "muonIdTight", "muonIsoLoose", "muonIsoTight", "muonTrig",
+        "photonIdLoose", "photonPixelSeedVeto",
+        "tauIdTight",
+        "btagSF",
+        "metTrigStat",
+        "pileup", "prefiring",
+        "pdfscale", "alphas", "qcdF", "qcdR", "qcdFqcdR",
+        "jesTotal", "jerSF", "unclust",
+        "eleEnergyScale", "muonPtScale", "photonEnergyScale",
+    ]
+params:
+    - ["rw_qcd", "rateParam", "*", "WJetsToLNu", "1", "[0.1,2.0]"]
+    - ["*", "autoMCStats", "10", "1"]
