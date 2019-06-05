@@ -1,9 +1,6 @@
 #!/usr/bin/env python
-import ROOT
-ROOT.gROOT.SetBatch(True)
-ROOT.PyConfig.IgnoreCommandLineOptions = True
-
 import argparse
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -23,13 +20,11 @@ def parse_args():
     parser.add_argument("cfg", type=str, help="Input config yaml")
     parser.add_argument("-d", "--datacard", type=str, default="datacard.txt",
                         help="Output path for the datacard")
-    parser.add_argument("-s", "--shape", type=str, default="shape.root",
+    parser.add_argument("-s", "--shape", type=str, default="shape.h5",
                         help="Output path for the shape file")
+    parser.add_argument("--draw", default=False, action='store_true',
+                        help="Draw alternative templates")
     return parser.parse_args()
-
-def change_parent(df, name, selection):
-    df.loc[selection, "parent"] = name
-    return df
 
 def preprocess(df, evals):
     for ev in evals:
@@ -116,7 +111,6 @@ def open_dfs(path, cfg, systs):
         df_mc = store["MCAggEvents"].loc[("central",), :]
         print("Reading MC (jecs)")
         df_mc_jecs = store["MCAggEvents_jecs"]
-        df_mc_jecs_corr = store["jecCorrector"]
         print("Reading MC (leps)")
         df_mc_leps = store["MCAggEvents_leps"]
 
@@ -142,13 +136,6 @@ def open_dfs(path, cfg, systs):
     )
     df_mc = rebin(df_mc, binning)
     df_mc = densify(df_mc, binning)
-
-    #df_mc_jecs_corr_w = df_mc_jecs_corr[["sum_w_jesTotalUp", "sum_w_jesTotalDown"]].mul(df_mc["sum_w"], axis=0)
-    #df_mc_jecs_corr_ww = df_mc_jecs_corr[["sum_ww_jesTotalUp", "sum_ww_jesTotalDown"]]#.mul(df_mc["sum_w"]**2, axis=0)
-    #df_mc.loc[:,"sum_w_jesTotalUp"] = df_mc_jecs_corr_w["sum_w_jesTotalUp"]
-    #df_mc.loc[:,"sum_w_jesTotalDown"] = df_mc_jecs_corr_w["sum_w_jesTotalDown"]
-    #df_mc.loc[:,"sum_ww_jesTotalUp"] = df_mc_jecs_corr_ww["sum_ww_jesTotalUp"]
-    #df_mc.loc[:,"sum_ww_jesTotalDown"] = df_mc_jecs_corr_ww["sum_ww_jesTotalDown"]
 
     df_mc.loc[:,"sum_w_jesTotalDown"] = 2*df_mc["sum_w"] - df_mc["sum_w_jesTotalUp"]
     df_mc.loc[:,"sum_ww_jesTotalDown"] = df_mc["sum_ww_jesTotalUp"]*(df_mc["sum_w_jesTotalDown"]/df_mc["sum_w_jesTotalUp"])**2
@@ -257,16 +244,6 @@ def open_dfs(path, cfg, systs):
 
     return df_data, df_mc
 
-def binned_df(df, idx, binning):
-    idx_names = [i for i in idx if i not in [l for l, _ in binning]]
-    for bins in it.product(*[b for _, b in binning]):
-        selection = True
-        for idx, (label, _) in enumerate(binning):
-            selection = selection & (df[label]==bins[idx])
-        tdf = df.drop([l for l, _ in binning], axis='columns')
-        tdf = tdf.loc[selection].set_index(idx_names)
-        yield tdf
-
 def smooth(x, y, err=None):
     if err is not None:
         s = UnivariateSpline(x, y, w=1./err, k=2, s=x.shape[0]*4)
@@ -274,78 +251,34 @@ def smooth(x, y, err=None):
         s = UnivariateSpline(x, y, k=2, s=x.shape[0]*4)
     return gaussian_filter1d(s(x), 1)
 
-def create_shapes(df_data, df_mc, shape_var, systematics, shape_file, direc):
-    df_out = pd.DataFrame()
+def create_shapes(idf_data, idf_mc, shape_var, systematics):
+    df_data = idf_data.reset_index("procidx", drop=True)
+    df_data.loc[:,"systematic"] = "central"
+    index = list(df_data.index.names)
+    index.insert(index.index("process")+1, "systematic")
+    df_data = df_data.reset_index().set_index(index).sort_index()
 
-    if direc != "":
-        if direc not in [k.GetName() for k in shape_file.GetListOfKeys()]:
-            shape_file.mkdir(direc)
-    shape_file.cd(direc)
-    for (ch, proc), dfg in df_mc.groupby(["channel", "process"]):
-        binning = list(dfg.index.get_level_values(shape_var))
-        last_bin = 2*binning[-1] - binning[-2]
-        binning.append(last_bin)
-        binning = np.array(binning).astype(float)
+    df_mc = idf_mc.reset_index("procidx", drop=True)
+    df_mc = df_mc.stack().to_frame("value")
+    df_mc.index.names = list(df_mc.index.names)[:-1] + ["systematic"]
+    df_mc = df_mc.reset_index("systematic")
+    df_mc.loc[:,"sum"] = np.where(df_mc["systematic"].str.startswith("sum_ww"), "sum_ww", "sum_w")
+    df_mc.loc[:,"systematic"] = (
+        df_mc["systematic"]
+        .str.replace("sum_w_","")
+        .str.replace("sum_ww_", "")
+        .str.replace("sum_ww", "central")
+        .str.replace("sum_w", "central")
+    )
+    df_mc = pd.pivot_table(
+        df_mc, values=["value"], columns=["sum"],
+        index=list(df_mc.index.names)+["systematic"], aggfunc=np.sum,
+    )
+    df_mc.columns = ["sum_w", "sum_ww"]
+    df_mc = df_mc.reset_index().set_index(index).sort_index()
 
-        # nominal
-        rhist = ROOT.TH1D(proc, ", ".join([ch, proc]), binning.shape[0]-1, binning)
-        rhist = root_numpy.array2hist(
-            dfg["sum_w"].values, rhist, errors=np.sqrt(dfg["sum_ww"]).values,
-        )
-
-        if ch not in [k.GetName() for k in ROOT.gDirectory.GetListOfKeys()]:
-            ROOT.gDirectory.mkdir(ch)
-        ROOT.gDirectory.cd(ch)
-        if "central" not in [k.GetName() for k in ROOT.gDirectory.GetListOfKeys()]:
-            ROOT.gDirectory.mkdir("central")
-        ROOT.gDirectory.cd("central")
-        rhist.Write()
-        rhist.Delete()
-        shape_file.cd(direc)
-
-        # systs
-        for tsyst in systematics:
-            for vari in ["Up", "Down"]:
-                syst = tsyst + vari
-                rhist = ROOT.TH1D(proc, ", ".join([ch, proc]), binning.shape[0]-1, binning)
-                rhist = root_numpy.array2hist(
-                    dfg["sum_w_{}".format(syst)].values, rhist,
-                    errors=np.sqrt(dfg["sum_ww_{}".format(syst)]).values,
-                )
-                if ch not in [k.GetName() for k in ROOT.gDirectory.GetListOfKeys()]:
-                    ROOT.gDirectory.mkdir(ch)
-                ROOT.gDirectory.cd(ch)
-                if syst not in [k.GetName() for k in ROOT.gDirectory.GetListOfKeys()]:
-                    ROOT.gDirectory.mkdir(syst)
-                ROOT.gDirectory.cd(syst)
-                rhist.Write()
-                rhist.Delete()
-                shape_file.cd(direc)
-
-    for (ch, proc), dfg in df_data.groupby(["channel", "process"]):
-        binning = list(dfg.index.get_level_values(shape_var))
-        last_bin = 2*binning[-1] - binning[-2]
-        binning.append(last_bin)
-        binning = np.array(binning).astype(float)
-
-        # nominal
-        rhist = ROOT.TH1D(proc, ", ".join([ch, proc]), binning.shape[0]-1, binning)
-        rhist = root_numpy.array2hist(
-            dfg["sum_w"].values, rhist, errors=np.sqrt(dfg["sum_ww"]).values,
-        )
-
-        if ch not in [k.GetName() for k in ROOT.gDirectory.GetListOfKeys()]:
-            ROOT.gDirectory.mkdir(ch)
-        ROOT.gDirectory.cd(ch)
-        if "central" not in [k.GetName() for k in ROOT.gDirectory.GetListOfKeys()]:
-            ROOT.gDirectory.mkdir("central")
-        ROOT.gDirectory.cd("central")
-        rhist.Write()
-        rhist.Delete()
-        shape_file.cd(direc)
-
-    shape_file.cd()
-    return df_data, df_mc
+    df_shapes = pd.concat([df_data, df_mc], axis=0, sort=True)
+    return df_shapes
 
 def create_datacard(
     df_data, df_mc, systs, params, path, shapes, central_path, syst_path
@@ -362,7 +295,7 @@ def create_datacard(
 
     # shapes
     dc += tab.tabulate([
-        ["shapes", "*", "*", shapes, central_path, syst_path],
+        ["shapes", "*", "*", os.path.basename(shapes), central_path, syst_path],
     ], [], tablefmt="plain") + "\n" + "-"*80 + "\n"
 
     # data_obs
@@ -408,54 +341,49 @@ def create_datacard(
         f.write(dc)
     print("Created {}".format(path))
 
-def create_fitinputs(df_data, df_mc, shapepath, dcpath, cfg, systs):
+def create_fitinputs(tdf_data, tdf_mc, shapepath, dcpath, cfg, systs):
+    if not cfg["overflow"]:
+        index = tdf_data.index.names
+        tdf_data = (
+            tdf_data
+            .groupby(list(index)[:-1], as_index=False)
+            .apply(lambda x: x.iloc[:-1])
+        ).reset_index().set_index(index).sort_index()[["sum_w", "sum_ww"]]
+
+        index = tdf_mc.index.names
+        tdf_mc = (
+            tdf_mc
+            .groupby(list(index)[:-1], as_index=False)
+            .apply(lambda x: x.iloc[:-1])
+        ).reset_index().set_index(index).sort_index()[["sum_w", "sum_ww"]]
+
+    binvars = [sbins[0] for sbins in cfg["binning"]]
     binning = [(sbins[0], eval(sbins[1])) for sbins in cfg["binning"]]
-    rfile = ROOT.TFile.Open(shapepath, "RECREATE")
     shape_var = binning.pop()[0]
 
-    if len(binning)==0:
-        if cfg["overflow"]:
-            tdf_data = df_data.iloc[:]
-            tdf_mc = df_mc.iloc[:]
-        else:
-            tdf_data = df_data.iloc[:-1]
-            tdf_mc = df_mc.iloc[:-1]
-        df_data, df_mc = create_shapes(
-            tdf_data, tdf_mc, shape_var, systs, rfile, "",
-        )
-        print("Created {}".format(shapepath))
-        tdf_data = tdf_data.groupby(["channel", "process", "procidx"]).sum()
-        tdf_mc = tdf_mc.groupby(["channel", "process", "procidx"]).sum()
-        create_datacard(
-            tdf_data, tdf_mc, systs, cfg["params"], dcpath,
-            shapepath, "$CHANNEL/central/$PROCESS",
-            "$CHANNEL/$SYSTEMATIC/$PROCESS",
-        )
-    else:
-        bprod = it.product(*[b for _, b in binning])
-        tdfs_data = binned_df(df_data.reset_index(), df_data.index.names, binning)
-        tdfs_mc = binned_df(df_mc.reset_index(), df_mc.index.names, binning)
+    df_shapes = create_shapes(tdf_data, tdf_mc, shape_var, systs)
+    df_shapes.to_hdf(
+        shapepath, "shapes", format='table', append=False,
+        complib='blosc:lz4hc', complevel=9,
+    )
 
-        for bins, tdf_data, tdf_mc in zip(bprod, tdfs_data, tdfs_mc):
-            cat = "bin_"+"_".join(map(str, bins))
-            if not cfg["overflow"]:
-                tdf_data = tdf_data.iloc[:-1]
-                tdf_mc = tdf_mc.iloc[:-1]
-            create_shapes(
-                tdf_data, tdf_mc, shape_var, systs, rfile, cat,
-            )
-            print("Created {}:{}".format(shapepath, cat))
-            tdf_data = tdf_data.groupby(["channel", "process", "procidx"]).sum()
-            tdf_mc = tdf_mc.groupby(["channel", "process", "procidx"]).sum()
-            create_datacard(
-                tdf_data, tdf_mc, systs, cfg["params"],
-                dcpath.replace(".txt", "_"+cat+".txt"), shapepath,
-                "bin_$MASS/$CHANNEL/central/$PROCESS",
-                "bin_$MASS/$CHANNEL/$SYSTEMATIC/$PROCESS",
-            )
+    df_data = tdf_data.groupby(
+        [idx for idx in tdf_data.index.names if idx not in binvars]
+    ).sum()
+    df_data = df_data.astype(int)
+    df_data.loc[:,:] = -1
 
-    rfile.Close()
-    rfile.Delete()
+    df_mc = tdf_mc.groupby(
+        [idx for idx in tdf_mc.index.names if idx not in binvars]
+    ).sum()
+    df_mc = df_mc.astype(int)
+    df_mc.loc[:,:] = -1
+
+    create_datacard(
+        df_data, df_mc, systs, cfg["params"], dcpath, shapepath,
+        "$CHANNEL:central:$PROCESS:$MASS,sum_w:sum_ww",
+        "$CHANNEL:$SYSTEMATIC:$PROCESS:$MASS,sum_w:sum_ww",
+    )
 
 def draw_hist(x, w, **kwargs):
     plt.hist(x, weights=w, **kwargs)
@@ -507,7 +435,7 @@ def draw_syst_templates(df, systs, bins):
             df_flat.set_index(index),
         ], axis=1).reset_index()
 
-        name = "alttemps_{}.pdf".format("_".join(cat))
+        name = "alttemps_{}.pdf".format("_".join(map(str, cat)))
         df_syst.columns = [c if c!="Process" else "Proc" for c in df_syst.columns]
         g = sns.FacetGrid(
             df_syst, row='Syst', col='Proc', hue='Variation',
@@ -532,6 +460,7 @@ def draw_syst_templates(df, systs, bins):
         g.set_axis_labels(r'$p_{\mathrm{T}}^{\mathrm{miss}}$ (GeV)', "Relative template")
 
         g.fig.savefig(name, format='pdf', bbox_inches='tight')
+        plt.close(g.fig)
         print("Created {}".format(name))
 
 def main():
@@ -544,12 +473,15 @@ def main():
 
     systs += [s+"_smooth" for s in cfg["mc"]["systs"]]
     systs += [s+"_flat" for s in cfg["mc"]["systs"]]
-    create_fitinputs(df_data, df_mc, options.shape, options.datacard, cfg, systs)
+    create_fitinputs(
+        df_data, df_mc, options.shape, options.datacard, cfg, systs,
+    )
 
-    bins = eval(cfg["binning"][-1][1])
-    bins = np.array(list(bins) + [2*bins[-1]-bins[-2]])
-    plt.style.use('cms-sns')
-    draw_syst_templates(df_mc, cfg["mc"]["systs"], bins)
+    if options.draw:
+        bins = eval(cfg["binning"][-1][1])
+        bins = np.array(list(bins) + [2*bins[-1]-bins[-2]])
+        plt.style.use('cms-sns')
+        draw_syst_templates(df_mc, cfg["mc"]["systs"], bins)
 
 if __name__ == "__main__":
     main()
