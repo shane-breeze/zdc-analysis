@@ -15,14 +15,16 @@ mc:
     preproc:
         - "df: df.reset_index()"
         - "df: df.loc[df.eval(\"(varname0=='ZCand_pt') & (varname1=='METnoX_ptParaZCandNorm')\")]"
-        - "df: change_parent(df, 'DYJets', (df.parent=='DYJetsToLL'))"
-        - "df: change_parent(df, 'DYJets', (df.parent!='DYJetsToLL'))"
         - "df: df.groupby(['varname0', 'varname1', 'selection', 'parent', 'binvar0', 'binvar1']).sum().reset_index()"
     channel_processes:
-        - name: ["DoubleMuon", "DYJets", 1]
-          eval: "df: df.loc[df.eval(\"selection=='DoubleMuon'\")]"
-        - name: ["DoubleElectron", "DYJets", 1]
-          eval: "df: df.loc[df.eval(\"selection=='DoubleElectron'\")]"
+        - name: ["DoubleMuon", "DYJetsToMuMu", 0]
+          eval: "df: df.loc[(df.selection=='DoubleMuon') & (df.parent=='DYJetsToMuMu')]"
+        - name: ["DoubleMuon", "Backgrounds", 1]
+          eval: "df: df.loc[(df.selection=='DoubleMuon') & (df.parent!='DYJetsToMuMu')]"
+        - name: ["DoubleElectron", "DYJetsToEE", 0]
+          eval: "df: df.loc[(df.selection=='DoubleElectron') & (df.parent=='DYJetsToEE')]"
+        - name: ["DoubleElectron", "Backgrounds", 1]
+          eval: "df: df.loc[(df.selection=='DoubleElectron') & (df.parent!='DYJetsToEE')]"
     systs: [
         "d1kqcd", "d2kqcd", "d3kqcd", "d1kew", "d2keww", "d2kewz", "d3keww", "d3kewz", "dkmix",
         "eleIdIsoTight", "eleIdIsoVeto", "eleReco", "eleTrig",
@@ -36,4 +38,5 @@ mc:
         "jesTotal", "jerSF", "unclust",
         "eleEnergyScale", "muonPtScale", "photonEnergyScale",
     ]
+    add_syst: {}
 params: []
