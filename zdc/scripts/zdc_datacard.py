@@ -9,6 +9,7 @@ import copy
 import zdc.modules.dataframe as df_tools
 import zdc.modules.shapes as shape_tools
 import zdc.modules.datacard as dc_tools
+import zdc.modules.draw as draw_tools
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -176,11 +177,12 @@ def create_fitinputs(tdf_data, tdf_mc, shapepath, dcpath, cfg, systs):
         ).reset_index().set_index(index).sort_index()[["sum_w", "sum_ww"]]
 
         index = tdf_mc.index.names
+        columns = tdf_mc.columns
         tdf_mc = (
             tdf_mc
             .groupby(list(index)[:-1], as_index=False)
             .apply(lambda x: x.iloc[:-1])
-        ).reset_index().set_index(index).sort_index()[["sum_w", "sum_ww"]]
+        ).reset_index().set_index(index).sort_index()[columns]
 
     binvars = [sbins[0] for sbins in cfg["binning"]]
     binning = [(sbins[0], eval(sbins[1])) for sbins in cfg["binning"]]
@@ -227,7 +229,7 @@ def main():
     if options.draw:
         bins = eval(cfg["binning"][-1][1])
         bins = np.array(list(bins) + [2*bins[-1]-bins[-2]])
-        draw_syst_templates(df_mc, cfg["mc"]["systs"], bins)
+        draw_tools.draw_syst_templates(df_mc, cfg["mc"]["systs"], bins)
 
 if __name__ == "__main__":
     main()
